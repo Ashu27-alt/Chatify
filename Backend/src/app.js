@@ -17,8 +17,10 @@ app.use(cors({
 
 import userRoutes from './Routes/user.routes.js';
 import chatRoutes from './Routes/chat.routes.js';
+import messageRoutes from './Routes/message.routes.js';
 
 app.use("/api/v1/user",userRoutes);
 app.use("/api/v1/chat",chatRoutes);
+app.use("/api/v1/chat/message",messageRoutes);
 
 export default server
