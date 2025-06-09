@@ -1,5 +1,6 @@
-import {User} from "../Models/user.model.js";
+import { User } from "../Models/user.model.js";
 import { cookieOption } from "../Constant/constants.js";
+import { uploadOnCloudinary, delFromCloudinary } from "../clodinary.js";
 
 const generateAccessandRefreshTokens = async (userId) => {
     try {
@@ -11,7 +12,7 @@ const generateAccessandRefreshTokens = async (userId) => {
         const refreshToken = await user.generateRefreshTokens()
 
         user.refreshToken = refreshToken;
-        await user.save({validateBeforeSave: false});
+        await user.save({ validateBeforeSave: false });
 
         return { accessToken, refreshToken }
     }
@@ -20,7 +21,7 @@ const generateAccessandRefreshTokens = async (userId) => {
     }
 }
 
-const registerUser = async (req,res) => {
+const registerUser = async (req, res) => {
     const { name, email, password } = req.body
 
     if ([name, email, password].some((field) => field?.trim() === "")) {
@@ -33,28 +34,50 @@ const registerUser = async (req,res) => {
         throw new Error("User already exists.");
     }
 
+    let file;
+    let profilePicture;
+    let profilePictureUrl;
+
+    if (req.file) {
+        file = req.file.path;
+        try {
+            profilePicture = await uploadOnCloudinary(file);
+            profilePictureUrl = profilePicture.url;
+        } catch (error) {
+            console.log("Error uploading file to cloudinary: ", error);
+        }
+    }
+
+    else {
+        profilePicture = "https://res.cloudinary.com/dg9jziji5/image/upload/f_auto,q_auto/pgwu3ff4bacngagwzu8n";
+    }
+
     try {
         const user = await User.create({
             name,
             email,
-            password
+            password,
+            profilePicture: profilePictureUrl
         })
 
         const newUser = await User.findOne({ email }).select("-password");
         if (!newUser) {
             throw new Error("User not found")
         }
-        
+
         console.log(newUser._id)
-        const {accessToken} = await generateAccessandRefreshTokens(newUser._id)
-        
+        const { accessToken } = await generateAccessandRefreshTokens(newUser._id)
+
         res.status(201)
             .cookie("accesstoken", accessToken, cookieOption)
-            .json({ success: true, message: "User created successfully",newUser})
+            .json({ success: true, message: "User created successfully", newUser })
 
     }
     catch (error) {
         console.log("Error creating user ", error);
+        if(profilePicture){
+            await delFromCloudinary(profilePicture.public_id)
+        }
     }
 }
 
@@ -70,45 +93,46 @@ const loginUser = async (req, res) => {
         if (!user) {
             throw new Error("User not found");
         }
-        
-        if(user.isPasswordCorrect(password)){
-            const {accessToken, refreshToken} = await generateAccessandRefreshTokens(user._id)
+
+        if (user.isPasswordCorrect(password)) {
+            const { accessToken, refreshToken } = await generateAccessandRefreshTokens(user._id)
             const userInfo = await User.findOne({ email }).select("-password");
             res.status(201)
-            .cookie("accesstoken", accessToken, cookieOption)
-            .cookie("refreshtoken", refreshToken, cookieOption)
-            .json({ success: true, message: "User logged in successfully",userInfo })
+                .cookie("accesstoken", accessToken, cookieOption)
+                .cookie("refreshtoken", refreshToken, cookieOption)
+                .json({ success: true, message: "User logged in successfully", userInfo })
         }
     }
-    catch(error){
+    catch (error) {
         console.log(error)
         throw new Error(error)
     }
 }
 
 const logOutUser = async (req, res) => {
-    try{await User.findByIdAndUpdate(req.user._id,
-        {
-            $set: { refreshToken: null }
-        },
-        {
-            new: true
-        }
-    )
-    res
-        .clearCookie("accesstoken", cookieOption)
-        .clearCookie("refreshtoken", cookieOption)
-        .json({ success: true, message: "User logged out successfully" })
+    try {
+        await User.findByIdAndUpdate(req.user._id,
+            {
+                $set: { refreshToken: null }
+            },
+            {
+                new: true
+            }
+        )
+        res
+            .clearCookie("accesstoken", cookieOption)
+            .clearCookie("refreshtoken", cookieOption)
+            .json({ success: true, message: "User logged out successfully" })
 
     }
-    catch(error){
+    catch (error) {
         console.log(error)
         throw new Error(error)
     }
 }
 
 const searchUser = async (req, res) => {
-    const {name} = req.body;
+    const { name } = req.body;
 
     if (name.trim() === "") {
         throw new Error("All the fields are required.");
@@ -120,7 +144,7 @@ const searchUser = async (req, res) => {
             throw new Error("User not found");
         }
         res.status(201)
-            .json({ success: true, message: "User found successfully",user})
+            .json({ success: true, message: "User found successfully", user })
     }
     catch (error) {
         console.log("Error creating user ", error);

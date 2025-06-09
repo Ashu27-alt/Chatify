@@ -2,12 +2,13 @@ import express from 'express';
 import { createServer } from 'node:http';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import {Server} from 'socket.io'
+import bodyParser from 'body-parser';
 
 const app = express();
 const server = createServer(app);
 
 app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(cors({
     origin: "http://localhost:5173",
