@@ -3,11 +3,10 @@ import { User } from "../Models/user.model.js";
 
 export const verifyJWT = async (req, _, next) => {
     const token = req.cookies.accesstoken || req.header("Authorization")?.replace("Bearer ", "");
-
-    if (!token) {
-        console.log("Token expires or not valid")
+    if(!token){
+        console.log("Token missing or Expired");
     }
-
+    
     try {
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const user = await User.findById(decodedToken?._id).select("-refreshToken -password");

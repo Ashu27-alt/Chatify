@@ -49,7 +49,7 @@ const registerUser = async (req, res) => {
     }
 
     else {
-        profilePicture = "https://res.cloudinary.com/dg9jziji5/image/upload/f_auto,q_auto/pgwu3ff4bacngagwzu8n";
+        profilePictureUrl = "https://res.cloudinary.com/dg9jziji5/image/upload/f_auto,q_auto/pgwu3ff4bacngagwzu8n";
     }
 
     try {
@@ -120,8 +120,7 @@ const logOutUser = async (req, res) => {
             }
         )
         res
-            .clearCookie("accesstoken", cookieOption)
-            .clearCookie("refreshtoken", cookieOption)
+            .clearCookie("accessToken", cookieOption)
             .json({ success: true, message: "User logged out successfully" })
 
     }
@@ -132,19 +131,11 @@ const logOutUser = async (req, res) => {
 }
 
 const searchUser = async (req, res) => {
-    const { name } = req.body;
-
-    if (name.trim() === "") {
-        throw new Error("All the fields are required.");
-    }
+    const { q } = req.query;
 
     try {
-        const user = await User.findOne({ name });
-        if (!user) {
-            throw new Error("User not found");
-        }
-        res.status(201)
-            .json({ success: true, message: "User found successfully", user })
+       const users = await User.find({ name: { $regex: q, $options: "i" } })
+        res.status(201).json({ success: true, message: "Users found successfully", users })
     }
     catch (error) {
         console.log("Error creating user ", error);

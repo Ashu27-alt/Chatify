@@ -1,28 +1,31 @@
-import { useEffect } from 'react'
-import {io} from 'socket.io-client'
+import { Routes, Route, Navigate } from "react-router-dom";
+
+import SignUp from "./Pages/SignUp";
+import Login from "./Pages/Login";
+import Chat from "./Pages/Chat.jsx";
+import { useContext } from "react";
+import { AuthContext } from "./Context/authContext.jsx";
 
 function App() {
-  const socket = io('http://localhost:8080')
-
-  useEffect(() => {
-    socket.on('connect', () => {
-      console.log('Connected to the server');
-    });
-
-    socket.on('welcome',(msg)=>{
-      console.log(msg)
-    });
-
-    return () => {
-      socket.disconnect();
-    }
-  }, []);
+  const [authUser] = useContext(AuthContext); 
 
   return (
-    <>
-      <h1>Hello world</h1>
-    </>
-  )
+    <Routes>
+      <Route
+        path="/login"
+        element={authUser ? <Navigate to="/chat" /> : <Login />}
+      />
+      <Route
+        path="/signup"
+        element={authUser ? <Navigate to="/chat" /> : <SignUp />}
+      />
+      <Route
+        path="/chat"
+        element={authUser ? <Chat /> : <Navigate to="/login" />}
+      />
+      <Route path="*" element={<Navigate to="/login" />} />
+    </Routes>
+  );
 }
 
-export default App
+export default App;
