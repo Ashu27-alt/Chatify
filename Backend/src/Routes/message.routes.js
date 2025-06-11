@@ -1,4 +1,4 @@
-import Router from "express";
+import {Router} from "express";
 import {verifyJWT} from "../middleware/aut.middleware.js"
 import { sendMessage,getAllChatMessages } from "../controllers/message.controller.js";
 

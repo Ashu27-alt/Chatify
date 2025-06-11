@@ -5,7 +5,7 @@ const ErrorPage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 px-4">
+    <div className="flex flex-col items-center justify-center h-full bg-gray-100 px-4">
       <h1 className="text-5xl font-bold text-red-600 mb-4">Oops!</h1>
       <p className="text-lg text-gray-700 mb-6">Something went wrong.</p>
       <button

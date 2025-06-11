@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-
 import SignUp from "./Pages/SignUp";
 import Login from "./Pages/Login";
 import Chat from "./Pages/Chat.jsx";
@@ -19,8 +18,13 @@ function App() {
         path="/signup"
         element={authUser ? <Navigate to="/chat" /> : <SignUp />}
       />
+      
       <Route
         path="/chat"
+        element={authUser ? <Chat /> : <Navigate to="/login" />}
+      />
+      <Route
+        path="/chat/:chatId"
         element={authUser ? <Chat /> : <Navigate to="/login" />}
       />
       <Route path="*" element={<Navigate to="/login" />} />

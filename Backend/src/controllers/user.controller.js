@@ -132,9 +132,14 @@ const logOutUser = async (req, res) => {
 
 const searchUser = async (req, res) => {
     const { q } = req.query;
+    const currentUserId = req.user._id;
 
+    if(!q){
+        return null;
+    }
     try {
-       const users = await User.find({ name: { $regex: q, $options: "i" } })
+       const data = await User.find({ name: { $regex: q, $options: "i" } })
+       const users = data.filter((user) => user._id.toString() !== currentUserId.toString());
         res.status(201).json({ success: true, message: "Users found successfully", users })
     }
     catch (error) {
