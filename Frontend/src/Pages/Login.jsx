@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../Context/authContext.jsx';
-
+import ErrorPage from './ErrorPage.jsx';
 const Login = () => {
 
     const [email, setEmail] = useState("")
@@ -21,7 +21,6 @@ const Login = () => {
                     credentials: "include"
                 })
                 const res = await info.json()
-                console.log(res)
                 localStorage.setItem("user", JSON.stringify(res.userInfo))
                 setAuthUser(res)
 
@@ -29,6 +28,7 @@ const Login = () => {
                 setPassword("")
             } catch (error) {
                 console.log(error)
+                return <ErrorPage />
             }
         }
         else {

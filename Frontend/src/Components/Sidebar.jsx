@@ -1,7 +1,8 @@
-// Sidebar.jsx
 import React, { useState, useEffect } from 'react';
 import ErrorPage from '../Pages/ErrorPage';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useContextSocket } from '../Context/SocketContext.jsx';
+import { Link } from 'react-router-dom';
 
 function Sidebar() {
     const [results, setResults] = useState([]);
@@ -9,6 +10,7 @@ function Sidebar() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [userChats, setUserChats] = useState([]);
     const navigate = useNavigate();
+    const { socket } = useContextSocket();
 
     const query = searchParams.get("q") || "";
 
@@ -24,13 +26,23 @@ function Sidebar() {
                 credentials: 'include'
             });
             const res = await data.json();
-            console.log(res);
+            // console.log(res.chats)
             setUserChats(res.chats);
+            // console.log(userChats)
         } catch (error) {
             console.log(error);
             setHasError(true);
         }
     };
+
+    useEffect(() => {
+        if (!socket) return;
+        else {
+            socket.on("newchat", (fullChat) => {
+                setUserChats((prev) => [...prev, fullChat]);
+            });
+        }
+    }, [socket]);
 
     const fetchUser = async () => {
         try {
@@ -66,14 +78,21 @@ function Sidebar() {
                 credentials: 'include'
             });
 
-            const res = await data.json();
-            const id = res.chatId || res._id || res.chat?._id || res.chatId;
-            if (!id) throw new Error("Chat ID missing in response");
-            setResults([]);
-            setSearchParams({});
-            document.getElementById("search-text").value = "";
-            await getChats();
-            navigate(`/chat/${id}`);
+            const response = await data.json();
+
+            if (response.success) {
+                const res = response.fullChat
+                const id = res._id;
+                if (!id) throw new Error("Chat ID missing in response");
+                setResults([]);
+                setSearchParams({});
+                document.getElementById("search-text").value = "";
+                await getChats();
+                navigate(`/chat/${id}`);
+            }
+            else {
+                alert(response.message);
+            }
         } catch (error) {
             console.log(error);
             setHasError(true);
@@ -88,6 +107,28 @@ function Sidebar() {
         getChats();
     }, []);
 
+    const logoutHandler = async () => {
+        try {
+            localStorage.removeItem("user");
+    
+            const res = await fetch("http://localhost:8080/api/v1/user/logout", {
+                method: "POST",
+                credentials: "include"
+            });
+    
+            if (!res.ok) {
+                console.error("Logout failed on server");
+                return;
+            }
+    
+            console.log("navigating to /login .....");
+            navigate("/login");
+        } catch (err) {
+            console.error("Error in logoutHandler:", err);
+        }
+    };
+    
+
     if (hasError) return <ErrorPage />;
 
     const user = localStorage.getItem("user");
@@ -95,52 +136,64 @@ function Sidebar() {
     const pfp = parsedUser.profilePicture || "https://res.cloudinary.com/dg9jziji5/image/upload/f_auto,q_auto/pgwu3ff4bacngagwzu8n";
 
     return (
-        <div className='h-full w-[30%] rounded-4xl flex-col p-5 bg-white shadow-2xl mx-4 relative'>
-            <div className='border border-dotted p-2 mt-4 rounded-2xl flex items-center'>
-                <img src={pfp} alt="User profile" className='object-left-bottom h-15 w-20 rounded-full' />
-                <input
-                    type='text'
-                    placeholder='Create New Chat'
-                    id='search-text'
-                    className='text-center outline-none text-md text-bold'
-                    onChange={changeHandler}
-                />
-            </div>
+        <div className='h-full w-[30%] rounded-4xl p-5 bg-white shadow-2xl mx-4 relative flex flex-col justify-between'>
+            <div>
+                <div className='border border-dotted p-2 mt-4 rounded-2xl flex items-center'>
+                    <img src={pfp} alt="User profile" className='object-left-bottom h-15 w-20 rounded-full' />
+                    <input
+                        type='text'
+                        placeholder='Create New Chat'
+                        id='search-text'
+                        className='text-center outline-none text-md text-bold w-full'
+                        onChange={changeHandler}
+                    />
+                </div>
 
-            {results.length > 0 && (
-                <ul className="absolute bg-white shadow-xl rounded-xl w-[90%] mt-2 z-20">
-                    {results.map((u, idx) => (
-                        <li
-                            key={idx}
-                            className="text-gray-700 m-0.5 h-[8vh] w-full rounded-2xl flex items-center px-2 cursor-pointer hover:bg-gray-200"
-                            onClick={clickFunction}
-                            data-username={u.name}
-                        >
-                            <img src={u.profilePicture} alt="Profile" className='object-left-bottom h-12 w-12 rounded-full mx-3' />
-                            <p className='font-bold'>{u.name}</p>
-                        </li>
-                    ))}
-                </ul>
-            )}
-
-            {userChats.length > 0 && (
-                <ul className="mt-4">
-                    {userChats.map((chat, idx) => {
-                        const otherUser = chat.users.find(u => u._id !== parsedUser._id);
-                        return (
+                {results.length > 0 && (
+                    <ul className="absolute bg-white shadow-xl rounded-xl w-[90%] mt-2 z-20">
+                        {results.map((u, idx) => (
                             <li
                                 key={idx}
-                                className="text-gray-700 m-0.5 h-[8vh] rounded-2xl flex items-center hover:bg-gray-200 cursor-pointer"
-                                onClick={() => clickFunction2(chat._id)}
+                                className="text-gray-700 m-0.5 h-[8vh] w-full rounded-2xl flex items-center px-2 cursor-pointer hover:bg-gray-200"
+                                onClick={clickFunction}
+                                data-username={u.name}
                             >
-                                <img src={otherUser.profilePicture} alt="Profile" className='object-left-bottom h-12 w-12 rounded-full mx-3' />
-                                <p className='font-bold'>{otherUser?.name}</p>
+                                <img src={u.profilePicture} alt="Profile" className='object-left-bottom h-12 w-12 rounded-full mx-3' />
+                                <p className='font-bold'>{u.name}</p>
                             </li>
-                        );
-                    })}
-                </ul>
-            )}
+                        ))}
+                    </ul>
+                )}
+
+                {userChats.length > 0 && (
+                    <ul className="mt-4">
+                        {userChats.map((chat, idx) => {
+                            const otherUser = chat.users.find(user => user._id !== parsedUser._id);
+                            return (
+                                <li
+                                    key={idx}
+                                    className="text-gray-700 m-0.5 h-[8vh] w-full rounded-2xl flex items-center hover:bg-gray-200 cursor-pointer"
+                                    onClick={() => clickFunction2(chat._id)}
+                                >
+                                    <img src={otherUser.profilePicture} alt="Profile" className='object-left-bottom h-12 w-12 rounded-full mx-3' />
+                                    <p className='font-bold text-base sm:text-sm truncate max-w-[50%]'>{otherUser?.name}</p>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                )}
+            </div>
+
+            <div className="mt-4">
+                <button
+                    onClick={logoutHandler}
+                    className="w-full py-2 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors"
+                >
+                    Logout
+                </button>
+            </div>
         </div>
+
     );
 }
 

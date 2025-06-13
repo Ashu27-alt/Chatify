@@ -1,5 +1,6 @@
 import { Chat } from "../Models/chat.model.js";
 import { User } from "../Models/user.model.js";
+import{io,getReceiverSocketId} from '../app.js'
 
 const createChat = async (req, res) => {
     const { name } = req.body;
@@ -10,17 +11,24 @@ const createChat = async (req, res) => {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
-        const existingChat = await Chat.findOne({
-            "users._id": { $all: [req.user._id, user2._id] },
-            users: { $size: 2 }
-        });
+        const existingChat = await Chat.findOne({ users: { $all: [req.user._id, user2._id] } });
 
         if (existingChat) {
-            return res.status(200).json({ success: true, message: "Chat already exists", chat: existingChat });
+            return res.status(200).json({ success: false, message: "Chat already exists"});
         }
 
-        const chat = await Chat.create({ users: [req.user, user2] });
-        res.status(201).json({ success: true, message: "Chat created successfully", chat });
+        const chat = await Chat.create({ users: [req.user._id, user2._id] });
+        const fullChat = await chat.populate("users", "name _id");
+
+        fullChat.users.forEach((user) => {
+            if (user._id.toString() !== req.user._id.toString()) {
+                const receiverSocketId = getReceiverSocketId(user._id.toString());
+                if (receiverSocketId) {
+                    io.to(receiverSocketId).emit("newchat", fullChat);
+                }
+            }
+        })
+        res.status(201).json({ success: true, message: "Chat created successfully", fullChat });
 
     } catch (error) {
         console.error("Error creating chat", error);
@@ -42,7 +50,7 @@ const deleteChat = async (req, res) => {
 
 const getAllChats = async (req, res) => {
     try {
-        const chats = await Chat.find({ "users._id": req.user._id });
+        const chats = await Chat.find({users: req.user._id}).populate("users", "name _id profilePicture");
         res.status(201).json({ success: true, message: "Chats found successfully", chats });
     } catch (error) {
         console.log("Error getting chats ", error);
@@ -54,11 +62,11 @@ const getSingleChat = async (req, res) => {
     const { chatId } = req.params;
 
     try {
-        const chat = await Chat.findById(chatId);
-        if (!chat) {
+        const chatShort = await Chat.findById(chatId);
+        if (!chatShort) {
             return res.status(404).json({ success: false, message: "Chat not found" });
         }
-
+        const chat = await chatShort.populate("users", "name _id profilePicture");
         res.status(200).json({ success: true, chat });
     } catch (error) {
         console.error("Error getting chat:", error);

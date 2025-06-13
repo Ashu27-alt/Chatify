@@ -4,7 +4,8 @@ import { Schema } from "mongoose";
 const chatSchema = new Schema({
     users: [
         {
-            type: Object
+            type: Schema.Types.ObjectId,
+            ref: "User"
         }
     ]
 }, {

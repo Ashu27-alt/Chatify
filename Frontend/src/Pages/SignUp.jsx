@@ -29,8 +29,8 @@ const SignUp = () => {
                 })
                 const res = await info.json()
                 console.log(res)
-                localStorage.setItem("user", JSON.stringify(res.userInfo))
-                setAuthUser(res)
+                localStorage.setItem("user", JSON.stringify(res.newUser))
+                setAuthUser(res.newUser)
 
                 setEmail("")
                 setPassword("")

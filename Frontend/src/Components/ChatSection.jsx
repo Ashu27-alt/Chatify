@@ -1,7 +1,7 @@
-// ChatSection.jsx
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import ErrorPage from '../Pages/ErrorPage';
+import { useContextSocket } from '../Context/SocketContext.jsx';
 
 function ChatSection() {
     const { chatId } = useParams();
@@ -10,6 +10,7 @@ function ChatSection() {
     const [newMessage, setNewMessage] = useState('');
     const [hasError, setHasError] = useState(false);
     const messagesEndRef = useRef(null);
+    const { socket } = useContextSocket();
 
     const user = JSON.parse(localStorage.getItem("user"));
 
@@ -20,6 +21,7 @@ function ChatSection() {
                 credentials: 'include'
             });
             const data = await res.json();
+            console.log(data)
             setMessages(data.messages);
         } catch (err) {
             console.log(err);
@@ -27,13 +29,22 @@ function ChatSection() {
         }
     };
 
+    useEffect(() => {
+        if (!socket) return;
+
+        socket.on("newmessage", (fullMessage) => {
+            setMessages((prev) => [...prev, fullMessage]);
+        })
+    }
+        , [socket])
     const fetchChatUser = async () => {
         try {
             const res = await fetch(`http://localhost:8080/api/v1/chat/${chatId}`, {
                 method: 'GET',
                 credentials: 'include'
             });
-            const { chat } = await res.json(); 
+            const { chat } = await res.json();
+            console.log("Chat User: ", chat)
             const other = chat.users.find((u) => u._id !== user._id);
             setChatUser(other);
         } catch (err) {
@@ -98,15 +109,15 @@ function ChatSection() {
 
             <div className='flex-1 overflow-y-auto pr-2'>
                 {messages.map((msg, idx) => (
-                    <div
-                        key={idx}
-                        className={`my-2 px-4 py-2 rounded-2xl max-w-[70%] ${
-                            (msg.sender._id || msg.sender) === user._id
-                                ? 'ml-auto bg-blue-500 text-white'
-                                : 'mr-auto bg-gray-200 text-black'
-                        }`}
-                    >
-                        {msg.content}
+                    <div key={idx} className={`w-full flex ${((msg.sender._id || msg.sender) === user._id) ? 'justify-end' : 'justify-start'}`}>
+                        <div
+                            className={`my-1 px-4 py-2 rounded-2xl inline-block max-w-[70%] break-words ${(msg.sender._id || msg.sender) === user._id
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-gray-200 text-black'
+                                }`}
+                        >
+                            {msg.content}
+                        </div>
                     </div>
                 ))}
                 <div ref={messagesEndRef} />
