@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useContext } from 'react';
 import ErrorPage from '../Pages/ErrorPage';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useContextSocket } from '../Context/SocketContext.jsx';
 import { Link } from 'react-router-dom';
+import { ThemeContext } from '../Context/ThemeContext.jsx';
+import { AuthContext } from '../Context/authContext.jsx';
 
 function Sidebar() {
     const [results, setResults] = useState([]);
@@ -11,6 +13,8 @@ function Sidebar() {
     const [userChats, setUserChats] = useState([]);
     const navigate = useNavigate();
     const { socket } = useContextSocket();
+    const [dark] = useContext(ThemeContext)
+    const [authUser,setAuthUser] = useContext(AuthContext);
 
     const query = searchParams.get("q") || "";
 
@@ -92,6 +96,7 @@ function Sidebar() {
             }
             else {
                 alert(response.message);
+                navigate("/");
             }
         } catch (error) {
             console.log(error);
@@ -122,6 +127,7 @@ function Sidebar() {
             }
     
             console.log("navigating to /login .....");
+            setAuthUser(null);
             navigate("/login");
         } catch (err) {
             console.error("Error in logoutHandler:", err);
@@ -136,10 +142,9 @@ function Sidebar() {
     const pfp = parsedUser.profilePicture || "https://res.cloudinary.com/dg9jziji5/image/upload/f_auto,q_auto/pgwu3ff4bacngagwzu8n";
 
     return (
-        <div className='h-full w-[30%] rounded-4xl p-5 bg-white shadow-2xl mx-4 relative flex flex-col justify-between'>
+        <div className={`${dark?'dark':'light'} h-full w-[30%] rounded-4xl p-4 shadow-2xl mx-4 relative flex flex-col justify-between`}>
             <div>
                 <div className='border border-dotted p-2 mt-4 rounded-2xl flex items-center'>
-                    <img src={pfp} alt="User profile" className='object-left-bottom h-15 w-20 rounded-full' />
                     <input
                         type='text'
                         placeholder='Create New Chat'
@@ -150,11 +155,11 @@ function Sidebar() {
                 </div>
 
                 {results.length > 0 && (
-                    <ul className="absolute bg-white shadow-xl rounded-xl w-[90%] mt-2 z-20">
+                    <ul className={`absolute shadow-xl rounded-xl w-[90%] mt-2 z-20 ${dark ? 'dark' : 'light'}`}>
                         {results.map((u, idx) => (
                             <li
                                 key={idx}
-                                className="text-gray-700 m-0.5 h-[8vh] w-full rounded-2xl flex items-center px-2 cursor-pointer hover:bg-gray-200"
+                                className={`m-0.5 h-[8vh] w-full rounded-2xl flex items-center px-2 cursor-pointer hover:bg-gray-200 hover:text-gray-700 ${dark?'text-white':'text-gray-700'}`}
                                 onClick={clickFunction}
                                 data-username={u.name}
                             >
@@ -172,7 +177,7 @@ function Sidebar() {
                             return (
                                 <li
                                     key={idx}
-                                    className="text-gray-700 m-0.5 h-[8vh] w-full rounded-2xl flex items-center hover:bg-gray-200 cursor-pointer"
+                                    className={`m-0.5 h-[8vh] w-full rounded-2xl flex items-center hover:bg-gray-200 hover:text-gray-700 cursor-pointer ${dark?'text-white':'text-gray-700'}`}
                                     onClick={() => clickFunction2(chat._id)}
                                 >
                                     <img src={otherUser.profilePicture} alt="Profile" className='object-left-bottom h-12 w-12 rounded-full mx-3' />

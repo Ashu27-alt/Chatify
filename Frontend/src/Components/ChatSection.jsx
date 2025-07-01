@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import ErrorPage from '../Pages/ErrorPage';
 import { useContextSocket } from '../Context/SocketContext.jsx';
+import { ThemeContext } from '../Context/ThemeContext.jsx';
 
 function ChatSection() {
     const { chatId } = useParams();
@@ -11,6 +12,7 @@ function ChatSection() {
     const [hasError, setHasError] = useState(false);
     const messagesEndRef = useRef(null);
     const { socket } = useContextSocket();
+    const [dark] = useContext(ThemeContext)
 
     const user = JSON.parse(localStorage.getItem("user"));
 
@@ -21,7 +23,6 @@ function ChatSection() {
                 credentials: 'include'
             });
             const data = await res.json();
-            console.log(data)
             setMessages(data.messages);
         } catch (err) {
             console.log(err);
@@ -44,7 +45,6 @@ function ChatSection() {
                 credentials: 'include'
             });
             const { chat } = await res.json();
-            console.log("Chat User: ", chat)
             const other = chat.users.find((u) => u._id !== user._id);
             setChatUser(other);
         } catch (err) {
@@ -87,14 +87,14 @@ function ChatSection() {
 
     if (!chatId) {
         return (
-            <div className='h-full w-full flex justify-center items-center rounded-4xl p-4 bg-white shadow-gray-950 shadow-2xl'>
-                <h1 className='text-2xl font-semibold text-gray-600'>Hello {user?.name || 'User'} 👋</h1>
+            <div className={`h-full w-full flex justify-center items-center rounded-4xl p-4 shadow-gray-950 shadow-2xl ${dark ? 'dark' : 'light'}`}>
+                <h1 className='text-2xl font-semibold'>Hello {user?.name || 'User'} 👋</h1>
             </div>
         );
     }
 
     return (
-        <div className='h-full w-full flex flex-col justify-between rounded-4xl p-4 bg-white shadow-gray-950 shadow-2xl'>
+        <div className={`h-full w-full flex flex-col justify-between rounded-4xl p-4 shadow-gray-950 shadow-2xl ${dark ? 'dark' : 'light'}`}>
 
             {chatUser && (
                 <div className="flex items-center border-b border-gray-300 pb-2 mb-2">
@@ -103,7 +103,7 @@ function ChatSection() {
                         alt="Chat User"
                         className="w-10 h-10 rounded-full mr-3 object-left-bottom"
                     />
-                    <span className="font-bold text-lg text-gray-800">{chatUser.name}</span>
+                    <span className={`font-bold text-lg ${dark? 'text-white' : 'text-gray-700'}`}>{chatUser.name}</span>
                 </div>
             )}
 

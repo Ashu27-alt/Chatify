@@ -150,10 +150,39 @@ const searchUser = async (req, res) => {
 
 }
 
+const toggleTheme = async (req, res) => {
+    try {
+        await User.findByIdAndUpdate(req.user._id,
+            {
+                $set: { darkTheme: !req.user.darkTheme }
+            },
+            {
+                new: true
+            }
+        )
+        res.status(201).json({ success: true, message: "Theme toggled successfully" })
+    }
+    catch (error) {
+        console.log(error)
+        throw new Error(error)
+    }
+}
+
+const getCurrentUser = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).select("-password");
+        res.status(201).json({ success: true, message: "User found successfully", user });
+    } catch (error) {
+        console.log("Error getting current user ", error);
+        res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+}
 export {
     generateAccessandRefreshTokens,
     registerUser,
     loginUser,
     logOutUser,
-    searchUser
+    searchUser,
+    toggleTheme,
+    getCurrentUser
 }

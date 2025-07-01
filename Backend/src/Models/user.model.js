@@ -22,6 +22,10 @@ const userSchema = new mongoose.Schema({
     },
     profilePicture: {
         type: String
+    },
+    darkTheme: {
+        type: Boolean,
+        default: false
     }
 })
 
